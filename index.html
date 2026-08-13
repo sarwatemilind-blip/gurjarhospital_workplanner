@@ -1071,6 +1071,14 @@ async function deleteDoctor(id){
   }
 }
 
+
+async function deleteEmployee(id, name) {
+  if (!confirm('Are you sure you want to delete employee "' + name + '"?')) return;
+  state.employees = state.employees.filter(e => e.id !== id);
+  await storageSet('employees', JSON.stringify(state.employees), true);
+  renderManagerList();
+}
+
 /* ---------- Logout / polling ---------- */
 
 function doLogout(){
