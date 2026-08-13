@@ -483,7 +483,8 @@ function topbar(subtitle){
 }
 
 /* ---------- Login screen ---------- */
-function renderLogin(){
+async function renderLogin(){
+  await loadEmployees();
   stopPolling();
   app.innerHTML = `
     <div class="login-wrap">
@@ -502,24 +503,57 @@ function renderLogin(){
   const fieldsWrap = document.getElementById('loginFields');
   function drawFields(){
     if(role==='employee'){
+      const empOptions = state.employees.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+      
       fieldsWrap.innerHTML = `
         <div class="login-field">
-          <label>Your name</label>
-          <input id="empNameInput" type="text" placeholder="e.g. Ramesh Chauhan" autocomplete="off">
+          <label>Select your name</label>
+          <select id="empNameSelect" style="width:100%; padding:10px; border:1px solid #d1d5db; border-radius:6px; font-size:15px; margin-bottom:10px; background:white;">
+            <option value="" disabled selected>-- Select Employee --</option>
+            ${empOptions}
+            <option value="NEW_EMPLOYEE">+ Add new employee</option>
+          </select>
+          <input id="empNameInput" type="text" placeholder="Type new name (e.g. Ramesh Chauhan)" autocomplete="off" style="display:none; width:100%; padding:10px; border:1px solid #d1d5db; border-radius:6px; font-size:15px; box-sizing:border-box;">
         </div>
-        <button class="primary-btn" id="enterBtn">Open my planner</button>
-        <div class="hint">New here? Just type your name — your planner is created automatically and stays visible to your manager.</div>`;
+        <button class="primary-btn" id="enterBtn" style="margin-top:10px;">Open my planner</button>
+        <div class="hint" style="margin-top:10px;">Select your name from the list, or choose "+ Add new employee" if you are new.</div>`;
+      
+      const selectEl = document.getElementById('empNameSelect');
+      const inputEl = document.getElementById('empNameInput');
+      
+      selectEl.addEventListener('change', (e) => {
+        if(e.target.value === 'NEW_EMPLOYEE') {
+          inputEl.style.display = 'block';
+          inputEl.focus();
+        } else {
+          inputEl.style.display = 'none';
+        }
+      });
+      
       document.getElementById('enterBtn').onclick = async ()=>{
-        const name = document.getElementById('empNameInput').value.trim();
-        if(!name) return;
-        const id = await ensureEmployee(name);
+        const selectedVal = selectEl.value;
+        if(!selectedVal) { alert('Please select your name.'); return; }
+        
+        let name = '';
+        let id = null;
+        
+        if (selectedVal === 'NEW_EMPLOYEE') {
+          name = inputEl.value.trim();
+          if(!name) { alert('Please type your name.'); return; }
+          id = await ensureEmployee(name);
+        } else {
+          id = selectedVal;
+          name = selectEl.options[selectEl.selectedIndex].text;
+        }
+        
         state.role='employee'; state.empId=id; state.empName=name;
         const now = new Date(); state.year=now.getFullYear(); state.month=now.getMonth();
         await loadPlan(state.empId, state.year, state.month);
         render();
         startPolling();
       };
-      document.getElementById('empNameInput').addEventListener('keydown', e=>{
+      
+      inputEl.addEventListener('keydown', e=>{
         if(e.key==='Enter') document.getElementById('enterBtn').click();
       });
     } else {
