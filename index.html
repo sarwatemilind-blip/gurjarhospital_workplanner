@@ -396,7 +396,7 @@ function relTime(ts){
 /* ---------------- Storage helpers ---------------- */
 async function storageGet(key, shared){
   try{
-    const { data, error } = await supabaseClient.from('keyvalue').select('value').eq('key', key).single();
+    const { data, error } = await supabaseClient.from('keyvalue').select('value').eq('key', key).maybeSingle();
     if(data && typeof data.value === 'string') return data.value;
     if(data && typeof data.value === 'object') return JSON.stringify(data.value);
     return null;
